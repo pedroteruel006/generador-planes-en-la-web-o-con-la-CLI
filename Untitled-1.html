@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Generador de planes</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;padding:20px;background:#f5f7fb;color:#0b1220}
+    label{display:block;margin-top:8px}
+    input{padding:6px;margin-top:4px}
+    button{padding:8px 12px;margin-top:10px}
+    pre{background:#0b1220;color:#e6f0ff;padding:12px;border-radius:6px;overflow:auto}
+    .controls{display:flex;gap:8px;align-items:center}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + ReactDOM + Babel (solo para desarrollo / demo) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    function App(){
+      const [user, setUser] = useState({
+        pesoKg: 70, alturaCm: 175, edad: 30, sexo: 'male',
+        actividad: 'moderate', objetivo: 'maintain', nivel: 'intermediate', diasSemana: 3
+      });
+      const [result, setResult] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+
+      async function generar(type){
+        setLoading(true); setError(null);
+        try {
+          const res = await fetch('/api/generate-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user, type })
+          });
+          if (!res.ok) throw new Error('Error en la API');
+          const json = await res.json();
+          setResult(json);
+        } catch (e) {
+          setError(e.message);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      return (
+        <div>
+          <h1>Generador de planes</h1>
+
+          <div>
+            <label>Peso (kg)
+              <input type="number" value={user.pesoKg} onChange={e=>setUser({...user, pesoKg:+e.target.value})} />
+            </label>
+
+            <label>Altura (cm)
+              <input type="number" value={user.alturaCm} onChange={e=>setUser({...user, alturaCm:+e.target.value})} />
+            </label>
+
+            <label>Edad
+              <input type="number" value={user.edad} onChange={e=>setUser({...user, edad:+e.target.value})} />
+            </label>
+
+            <label>Sexo
+              <select value={user.sexo} onChange={e=>setUser({...user, sexo:e.target.value})}>
+                <option value="male">Masculino</option>
+                <option value="female">Femenino</option>
+              </select>
+            </label>
+
+            <label>Actividad
+              <select value={user.actividad} onChange={e=>setUser({...user, actividad:e.target.value})}>
+                <option value="sedentary">Sedentario</option>
+                <option value="light">Ligero</option>
+                <option value="moderate">Moderado</option>
+                <option value="active">Activo</option>
+              </select>
+            </label>
+
+            <label>Objetivo
+              <select value={user.objetivo} onChange={e=>setUser({...user, objetivo:e.target.value})}>
+                <option value="lose">Perder</option>
+                <option value="maintain">Mantener</option>
+                <option value="gain">Ganar</option>
+              </select>
+            </label>
+
+            <div className="controls">
+              <button onClick={()=>generar('diet')} disabled={loading}>Generar Dieta</button>
+              <button onClick={()=>generar('workout')} disabled={loading}>Generar Entreno</button>
+            </div>
+          </div>
+
+          <div style={{marginTop:16}}>
+            {loading && <div>Cargando...</div>}
+            {error && <div style={{color:'red'}}>Error: {error}</div>}
+            <pre>{result ? JSON.stringify(result, null, 2) : 'Resultado aquí'}</pre>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
